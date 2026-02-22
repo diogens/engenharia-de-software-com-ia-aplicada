@@ -1,0 +1,13 @@
+{
+  "name": "exemplo-00",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "types": "module",
+  "scripts": {
+    "start": "TF_CPP_MIN_LOG_LEVEL=2 node --no-warnings --watch index.js"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-node": "4.22"
+  }
+}
