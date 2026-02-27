@@ -3,6 +3,7 @@ importScripts('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest');
 const MODEL_PATH = `yolov5n_web_model/model.json`;
 const LABELS_PATH = `yolov5n_web_model/labels.json`;
 const INPUT_MODEL_DIMENTIONS = 640;
+const CLASS_THRESHOLD = 0.4;
 
 let _labels = [];
 let _model = null;
@@ -62,7 +63,47 @@ async function runInference(tensor) {
         scores: scoresData, 
         classes: classesData 
     };
+}
 
+/**
+ * Filtra e processa as predições:
+ * - Aplica o limiar de confiança (CLASS_THRESHOLD)
+ * - Filtra apenas a classe desejada (exemplo: 'kite')
+ * - Converte coordenadas normalizadas para pixels reais
+ * - Calcula o centro do bounding box
+ *
+ * Uso de generator (function*):
+ * - Permite enviar cada predição assim que processada, sem criar lista intermediária
+ */
+function* processPrediction({ boxes, scores, classes }, width, height) {
+    for (let index = 0; index < scores.length; index++) {
+        if (scores[index] < CLASS_THRESHOLD) continue; // Filtra previsões com baixa confiança
+
+        const label = _labels[classes[index]]
+        if(label !== 'kite') continue; // Filtra apenas a classe "kite"
+
+        let [x1, y1, x2, y2] = boxes.slice(index * 4, index * 4 + 4);
+        x1 *= width; 
+        x2 *= width; 
+        y1 *= height; 
+        y2 *= height;
+        
+        const boxWidth = x2 - x1;
+        const boxHeight = y2 - y1;
+
+        const centerX = (x1 + boxWidth / 2);
+        const centerY = (y1 + boxHeight / 2);
+
+        const centerX2 = (x1 + x2) / 2;
+        const centerY2 = (y1 + y2) / 2;
+
+        yield {
+            x: centerX,
+            y: centerY,
+            score: (scores[index] * 100).toFixed(2) + '%',
+            label
+        };
+    }
 }
 
 loadModelAndLabels()
@@ -75,16 +116,21 @@ self.onmessage = async ({ data }) => {
     const { width, height } = await data.image;
 
     const inferenceResults = await runInference(input);
-    debugger;
+    
+    for (const prediction of processPrediction(inferenceResults, width, height)) {
+        //console.log(`📦 Detected: ${prediction.label} at (${prediction.x.toFixed(2)}, ${prediction.y.toFixed(2)}) with confidence ${prediction.score}`);
+        postMessage({
+            type: 'prediction',
+            ...prediction
+        });
+    }
 
-    postMessage({
+   /*  postMessage({
         type: 'prediction',
         x: 400,
         y: 400,
         score: 0
-    });
-
-
+    }); */
 };
 
 console.log('🧠 YOLOv5n Web Worker initialized');
