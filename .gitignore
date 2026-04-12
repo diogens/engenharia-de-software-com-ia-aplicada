@@ -147,3 +147,6 @@ neo4j/
 *.id
 *.log
 neostore*
+
+# Generated responses
+**/respostas/
