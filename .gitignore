@@ -138,4 +138,12 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Neo4j 
-neo4j
+neo4j/
+**/neo4j/data/
+**/neo4j/logs/
+**/neo4j/plugins/
+**/neo4j/import/
+*.db
+*.id
+*.log
+neostore*
